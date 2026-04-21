@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Global Market Simulator</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap"
+    rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #060d14;
+      --panel: #0b1623;
+      --panel2: #0f1e2e;
+      --border: #1a3348;
+      --accent: #00c8ff;
+      --accent2: #00ffc8;
+      --warn: #ffb300;
+      --danger: #ff4444;
+      --text: #c8dde8;
+      --dim: #4a6070;
+      --mc: #4fc3f7;
+      --qae: #ce93d8;
+      --ineq: #ff8a65;
+      --env: #81c784;
+      --mono: 'Share Tech Mono', monospace;
+      --sans: 'Rajdhani', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      grid-template-rows: 48px 1fr;
+      overflow: hidden;
+    }
+
+    /* ── HEADER ── */
+    header {
+      grid-column: 1 / -1;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 16px;
+    }
+
+    .header-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .4
+      }
+    }
+
+    header h1 {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #fff;
+      font-family: var(--sans);
+    }
+
+    .header-tag {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--dim);
+      margin-left: auto;
+    }
+
+    /* ── LEFT PANEL ── */
+    #sidebar {
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    #sidebar::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    #sidebar::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 2px;
+    }
+
+    .section-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--dim);
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+      margin-bottom: 4px;
+    }
+
+    /* ── SLIDERS ── */
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .slider-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .slider-name {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .slider-name .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .slider-val {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      min-width: 38px;
+      text-align: right;
+    }
+
+    .slider-desc {
+      font-size: 10px;
+      color: var(--dim);
+      line-height: 1.4;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 3px;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform .15s;
+      border: 2px solid var(--bg);
+    }
+
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.3);
+    }
+
+    .slider-mc {
+      background: linear-gradient(to right, var(--border), var(--mc));
+    }
+
+    .slider-mc::-webkit-slider-thumb {
+      background: var(--mc);
+      box-shadow: 0 0 6px var(--mc);
+    }
+
+    .slider-qae {
+      background: linear-gradient(to right, var(--border), var(--qae));
+    }
+
+    .slider-qae::-webkit-slider-thumb {
+      background: var(--qae);
+      box-shadow: 0 0 6px var(--qae);
+    }
+
+    .slider-ineq {
+      background: linear-gradient(to right, var(--border), var(--ineq));
+    }
+
+    .slider-ineq::-webkit-slider-thumb {
+      background: var(--ineq);
+      box-shadow: 0 0 6px var(--ineq);
+    }
+
+    .slider-env {
+      background: linear-gradient(to right, var(--border), var(--env));
+    }
+
+    .slider-env::-webkit-slider-thumb {
+      background: var(--env);
+      box-shadow: 0 0 6px var(--env);
+    }
+
+    /* ── METRICS ── */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .metric-card {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color .3s;
+    }
+
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 3px;
+      height: 100%;
+    }
+
+    .metric-card.fairness::before {
+      background: var(--accent2);
+    }
+
+    .metric-card.risk::before {
+      background: var(--warn);
+    }
+
+    .metric-card.stability::before {
+      background: var(--accent);
+    }
+
+    .metric-card.co2::before {
+      background: var(--env);
+    }
+
+    .metric-label {
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--dim);
+      text-transform: uppercase;
+      font-family: var(--mono);
+    }
+
+    .metric-value {
+      font-family: var(--mono);
+      font-size: 22px;
+      font-weight: 700;
+      margin: 2px 0;
+      line-height: 1;
+    }
+
+    .metric-unit {
+      font-size: 9px;
+      color: var(--dim);
+    }
+
+    .metric-bar {
+      width: 100%;
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+
+    .metric-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width .6s cubic-bezier(.4, 0, .2, 1);
+    }
+
+    .fairness .metric-value {
+      color: var(--accent2);
+    }
+
+    .fairness .metric-bar-fill {
+      background: var(--accent2);
+    }
+
+    .risk .metric-value {
+      color: var(--warn);
+    }
+
+    .risk .metric-bar-fill {
+      background: var(--warn);
+    }
+
+    .stability .metric-value {
+      color: var(--accent);
+    }
+
+    .stability .metric-bar-fill {
+      background: var(--accent);
+    }
+
+    .co2 .metric-value {
+      color: var(--env);
+    }
+
+    .co2 .metric-bar-fill {
+      background: var(--env);
+    }
+
+    /* ── INSIGHT BOX ── */
+    #insight-box {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 4px;
+      padding: 10px;
+      font-size: 11px;
+      line-height: 1.6;
+      color: #8dafc4;
+      min-height: 52px;
+      transition: border-color .3s;
+    }
+
+    #insight-box .insight-head {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--dim);
+      margin-bottom: 4px;
+    }
+
+    /* ── ENERGY BREAKDOWN ── */
+    .energy-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      padding: 4px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .energy-row:last-child {
+      border-bottom: none;
+    }
+
+    .energy-method {
+      color: var(--dim);
+    }
+
+    .energy-val {
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    /* ── MAP ── */
+    #map-container {
+      position: relative;
+      overflow: hidden;
+    }
+
+    #map {
+      height: 100%;
+      width: 100%;
+    }
+
+    /* ── LEGEND ── */
+    #legend {
+      position: absolute;
+      bottom: 20px;
+      right: 16px;
+      background: rgba(6, 13, 20, .88);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      z-index: 1000;
+      font-size: 11px;
+    }
+
+    #legend .leg-title {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--dim);
+      margin-bottom: 8px;
+    }
+
+    .leg-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+      font-size: 11px;
+    }
+
+    .leg-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    /* ── TOOLTIP ── */
+    .leaflet-popup-content-wrapper {
+      background: rgba(6, 13, 20, .95) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 6px !important;
+      color: var(--text) !important;
+      font-family: var(--sans) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, .5) !important;
+    }
+
+    .leaflet-popup-tip {
+      background: var(--border) !important;
+    }
+
+    .leaflet-popup-content {
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .popup-country {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .popup-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .popup-key {
+      color: var(--dim);
+    }
+
+    .popup-val {
+      font-family: var(--mono);
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="header-dot"></div>
+    <h1>Global Market Technology Simulator</h1>
+    <span class="header-tag">LIVE SIM · MODEL v2.1</span>
+  </header>
+
+  <div id="sidebar">
+
+    <!-- CONTROLS -->
+    <div>
+      <div class="section-label">Technology Adoption Controls</div>
+      <div class="slider-group">
+
+        <div class="slider-row">
+          <div class="slider-header">
+            <div class="slider-name">
+              <div class="dot" style="background:var(--mc)"></div>
+              Monte Carlo Adoption
+            </div>
+            <div class="slider-val" id="mc-val" style="color:var(--mc)">0%</div>
+          </div>
+          <input type="range" id="mc-slider" class="slider-mc" min="0" max="100" value="0">
+          <div class="slider-desc">Numerical path simulation. Improves pricing of complex derivatives. High CPU usage.
+          </div>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-header">
+            <div class="slider-name">
+              <div class="dot" style="background:var(--qae)"></div>
+              Quantum Amplitude Est.
+            </div>
+            <div class="slider-val" id="qae-val" style="color:var(--qae)">0%</div>
+          </div>
+          <input type="range" id="qae-slider" class="slider-qae" min="0" max="100" value="0">
+          <div class="slider-desc">Quadratic speedup over Monte Carlo. Nascent technology — limited real-world
+            deployment. Extreme energy cost.</div>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-header">
+            <div class="slider-name">
+              <div class="dot" style="background:var(--ineq)"></div>
+              Access Inequality Factor
+            </div>
+            <div class="slider-val" id="ineq-val" style="color:var(--ineq)">0%</div>
+          </div>
+          <input type="range" id="ineq-slider" class="slider-ineq" min="0" max="100" value="0">
+          <div class="slider-desc">Amplifies disparity between developed & limited-access regions. High values
+            destabilize global markets.</div>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-header">
+            <div class="slider-name">
+              <div class="dot" style="background:var(--env)"></div>
+              Compute Intensity
+            </div>
+            <div class="slider-val" id="env-val" style="color:var(--env)">0%</div>
+          </div>
+          <input type="range" id="env-slider" class="slider-env" min="0" max="100" value="0">
+          <div class="slider-desc">Scale of computational infrastructure deployed globally. Drives energy use and CO₂
+            output.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- METRICS -->
+    <div>
+      <div class="section-label">Market Outcome Metrics</div>
+      <div class="metrics-grid">
+
+        <div class="metric-card fairness">
+          <div class="metric-label">Pricing Fairness</div>
+          <div class="metric-value" id="m-fairness">—</div>
+          <div class="metric-unit">/ 100</div>
+          <div class="metric-bar">
+            <div class="metric-bar-fill" id="b-fairness" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div class="metric-card risk">
+          <div class="metric-label">Risk Appetite</div>
+          <div class="metric-value" id="m-risk">—</div>
+          <div class="metric-unit">/ 100</div>
+          <div class="metric-bar">
+            <div class="metric-bar-fill" id="b-risk" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div class="metric-card stability">
+          <div class="metric-label">Mkt Stability</div>
+          <div class="metric-value" id="m-stability">—</div>
+          <div class="metric-unit">/ 100</div>
+          <div class="metric-bar">
+            <div class="metric-bar-fill" id="b-stability" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div class="metric-card co2">
+          <div class="metric-label">CO₂ Output</div>
+          <div class="metric-value" id="m-co2">—</div>
+          <div class="metric-unit">Mt/yr est.</div>
+          <div class="metric-bar">
+            <div class="metric-bar-fill" id="b-co2" style="width:0%"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ENERGY BREAKDOWN -->
+    <div>
+      <div class="section-label">Energy Breakdown (TWh/yr)</div>
+      <div class="energy-row">
+        <span class="energy-method">Black–Scholes (baseline)</span>
+        <span class="energy-val" id="e-bs">—</span>
+      </div>
+      <div class="energy-row">
+        <span class="energy-method" style="color:var(--mc)">Monte Carlo</span>
+        <span class="energy-val" id="e-mc">—</span>
+      </div>
+      <div class="energy-row">
+        <span class="energy-method" style="color:var(--qae)">Quantum Amp. Est.</span>
+        <span class="energy-val" id="e-qae">—</span>
+      </div>
+      <div class="energy-row">
+        <span class="energy-method">Total</span>
+        <span class="energy-val" id="e-total" style="color:#fff">—</span>
+      </div>
+    </div>
+
+    <!-- INSIGHT -->
+    <div>
+      <div class="section-label">System Insight</div>
+      <div id="insight-box">
+        <div class="insight-head">ANALYSIS</div>
+        <span id="insight-text">Adjust sliders to begin simulation. The model uses deterministic functions to translate
+          technology adoption into market outcomes.</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="map-container">
+    <div id="map"></div>
+
+    <div id="legend">
+      <div class="leg-title">ADOPTION LEVEL</div>
+      <div class="leg-row">
+        <div class="leg-swatch" style="background:#1a5c8a"></div>Black–Scholes Only (&lt;25%)
+      </div>
+      <div class="leg-row">
+        <div class="leg-swatch" style="background:#2196a8"></div>Early MC (&lt;50%)
+      </div>
+      <div class="leg-row">
+        <div class="leg-swatch" style="background:#00bcd4"></div>Advanced MC (&lt;75%)
+      </div>
+      <div class="leg-row">
+        <div class="leg-swatch" style="background:#00e5ff"></div>QAE Emerging (&lt;90%)
+      </div>
+      <div class="leg-row">
+        <div class="leg-swatch" style="background:#b2ff59"></div>Full Quantum (&ge;90%)
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // ── COUNTRY DATA ─────────────────────────────────────────────────────────────
+    // Tier: 0=limited, 1=developing, 2=developed
+    // baseMC: inherent Monte Carlo readiness (infrastructure, quant talent)
+    // baseQAE: inherent QAE readiness (research labs, capital)
+    // ineqMultiplier: how much inequality affects this country
+
+    const COUNTRY_DATA = {
+      "United States of America": { tier: 2, baseMC: 0.88, baseQAE: 0.72, ineqMult: 0.3 },
+      "United Kingdom": { tier: 2, baseMC: 0.85, baseQAE: 0.60, ineqMult: 0.3 },
+      "Germany": { tier: 2, baseMC: 0.82, baseQAE: 0.55, ineqMult: 0.3 },
+      "France": { tier: 2, baseMC: 0.80, baseQAE: 0.52, ineqMult: 0.3 },
+      "Japan": { tier: 2, baseMC: 0.83, baseQAE: 0.65, ineqMult: 0.3 },
+      "Canada": { tier: 2, baseMC: 0.78, baseQAE: 0.50, ineqMult: 0.3 },
+      "Australia": { tier: 2, baseMC: 0.76, baseQAE: 0.45, ineqMult: 0.3 },
+      "South Korea": { tier: 2, baseMC: 0.75, baseQAE: 0.58, ineqMult: 0.3 },
+      "Netherlands": { tier: 2, baseMC: 0.80, baseQAE: 0.50, ineqMult: 0.3 },
+      "Switzerland": { tier: 2, baseMC: 0.85, baseQAE: 0.55, ineqMult: 0.3 },
+      "Sweden": { tier: 2, baseMC: 0.77, baseQAE: 0.48, ineqMult: 0.3 },
+      "Norway": { tier: 2, baseMC: 0.75, baseQAE: 0.44, ineqMult: 0.3 },
+      "Singapore": { tier: 2, baseMC: 0.82, baseQAE: 0.60, ineqMult: 0.3 },
+      "China": { tier: 1, baseMC: 0.62, baseQAE: 0.55, ineqMult: 0.6 },
+      "India": { tier: 1, baseMC: 0.45, baseQAE: 0.30, ineqMult: 0.7 },
+      "Brazil": { tier: 1, baseMC: 0.40, baseQAE: 0.18, ineqMult: 0.65 },
+      "Mexico": { tier: 1, baseMC: 0.38, baseQAE: 0.14, ineqMult: 0.65 },
+      "Indonesia": { tier: 1, baseMC: 0.30, baseQAE: 0.10, ineqMult: 0.7 },
+      "South Africa": { tier: 1, baseMC: 0.35, baseQAE: 0.12, ineqMult: 0.65 },
+      "Turkey": { tier: 1, baseMC: 0.42, baseQAE: 0.15, ineqMult: 0.6 },
+      "Argentina": { tier: 1, baseMC: 0.36, baseQAE: 0.12, ineqMult: 0.65 },
+      "Malaysia": { tier: 1, baseMC: 0.38, baseQAE: 0.14, ineqMult: 0.65 },
+      "Thailand": { tier: 1, baseMC: 0.32, baseQAE: 0.10, ineqMult: 0.65 },
+      "Russia": { tier: 1, baseMC: 0.50, baseQAE: 0.35, ineqMult: 0.55 },
+    };
+
+    function getCountryData(name) {
+      if (COUNTRY_DATA[name]) return COUNTRY_DATA[name];
+      // Default: limited access
+      return { tier: 0, baseMC: 0.08, baseQAE: 0.02, ineqMult: 0.9 };
+    }
+
+    // ── SIMULATION MODEL ─────────────────────────────────────────────────────────
+    // All relationships are deterministic, mathematical, and defined.
+
+    function sigmoid(x, k = 1, x0 = 0.5) {
+      return 1 / (1 + Math.exp(-k * (x - x0)));
+    }
+
+    function computeAdoption(country, mcGlobal, qaeGlobal, ineqFactor) {
+      const d = getCountryData(country);
+
+      // Effective MC adoption: global push × country readiness
+      // Logarithmic saturation — early gains are large, later gains diminish
+      const mcEff = d.baseMC * (1 + 0.8 * Math.log1p(mcGlobal / 100));
+
+      // QAE is harder to adopt: sigmoid with high threshold
+      const qaeEff = d.baseQAE * sigmoid(qaeGlobal / 100, 6, 0.6);
+
+      // Combined adoption (0–1 scale)
+      // BS is always there (base); MC and QAE layer on top
+      const rawAdoption = 0.15 + 0.45 * Math.min(1, mcEff) + 0.40 * Math.min(1, qaeEff);
+
+      // Inequality factor: suppresses developing/limited nations
+      // Developed nations are largely unaffected; limited nations lose most
+      const ineqPenalty = (ineqFactor / 100) * d.ineqMult * rawAdoption * 0.8;
+
+      return Math.max(0, Math.min(1, rawAdoption - ineqPenalty));
+    }
+
+    function computeMetrics(mcGlobal, qaeGlobal, ineqFactor, computeIntensity) {
+      // ── Fairness
+      // Better methods → fairer pricing. Concave (diminishing returns).
+      // Inequality reduces global fairness due to two-speed market.
+      const techFairness = 30 + 40 * (1 - Math.exp(-0.035 * mcGlobal))
+        + 20 * sigmoid(qaeGlobal / 100, 5, 0.55);
+      const ineqPenaltyFairness = ineqFactor * 0.25;
+      const fairness = Math.max(0, Math.min(100, techFairness - ineqPenaltyFairness));
+
+      // ── Risk Appetite
+      // Better technology increases confidence → more risk-taking.
+      // Inequality creates systemic risk (herding, contagion) → adds to aggregate risk.
+      const techRisk = 20 + 30 * sigmoid(mcGlobal / 100, 4, 0.4)
+        + 25 * sigmoid(qaeGlobal / 100, 5, 0.6);
+      const ineqRisk = ineqFactor * 0.18;
+      const risk = Math.max(0, Math.min(100, techRisk + ineqRisk));
+
+      // ── Stability
+      // Accuracy improves stability. But high risk-taking erodes stability.
+      // Inequality is the largest destabilizer (information asymmetry, contagion).
+      const baseStability = 70 + 20 * (1 - Math.exp(-0.02 * mcGlobal))
+        + 10 * sigmoid(qaeGlobal / 100, 4, 0.65);
+      const riskDrag = risk * 0.35;
+      const ineqDrag = ineqFactor * 0.30;
+      const stability = Math.max(0, Math.min(100, baseStability - riskDrag - ineqDrag));
+
+      // ── Energy & CO₂
+      // Black-Scholes: baseline, low energy (analytical solution)
+      // Monte Carlo: scales with adoption and compute intensity
+      // QAE: quantum hardware is extremely energy-intensive (cryogenics, error correction)
+      // CO₂ = energy × regional grid carbon intensity (simplified factor 0.4 tCO₂/MWh avg)
+
+      const bsEnergy = 12 + 2 * (computeIntensity / 100); // TWh/yr baseline
+      const mcEnergy = (mcGlobal / 100) * (computeIntensity / 100) * 180; // TWh/yr
+      // QAE energy is disproportionate: cryogenics + classical overhead
+      const qaeEnergy = Math.pow(qaeGlobal / 100, 1.4) * (computeIntensity / 100) * 420;
+      const totalEnergy = bsEnergy + mcEnergy + qaeEnergy;
+      const co2 = totalEnergy * 0.38 / 1000; // Mt CO₂/yr (simplified)
+
+      return { fairness, risk, stability, co2, bsEnergy, mcEnergy, qaeEnergy, totalEnergy };
+    }
+
+    function generateInsight(mc, qae, ineq, env, metrics) {
+      const { fairness, risk, stability, co2 } = metrics;
+
+      if (mc < 5 && qae < 5) {
+        return "Market operates on Black–Scholes baseline. Analytical pricing is fast but assumes constant volatility and log-normal returns — mispricing risk is high for exotic instruments.";
+      }
+      if (ineq > 70 && stability < 40) {
+        return "⚠ Critical: Extreme access inequality is fragmenting the global market. Two-speed pricing creates systematic arbitrage opportunities. High contagion risk from developing-region instability propagating to developed markets.";
+      }
+      if (qae > 60 && co2 > 8) {
+        return "⚠ Environmental alert: Quantum adoption at this scale demands massive cryogenic infrastructure. Estimated emissions rival mid-sized industrial nations. Regulatory pressure likely.";
+      }
+      if (mc > 70 && qae < 20 && ineq < 30) {
+        return "Healthy Monte Carlo adoption with low inequality. Derivative pricing accuracy improves significantly. Risk appetite rising but distributed evenly across regions — systemic risk remains manageable.";
+      }
+      if (qae > 50 && ineq > 40) {
+        return "QAE adoption concentrated in developed nations creates an unprecedented information edge. Developing-market participants face structurally unfair pricing. Instability risk is elevated.";
+      }
+      if (risk > 75 && stability < 50) {
+        return "⚠ High risk appetite combined with structural instability. Models confident but market fragile. Historical analog: 2007 — quant models were sophisticated, but systemic risk was systematically underestimated.";
+      }
+      if (fairness > 75 && stability > 70) {
+        return "Optimal zone: High fairness and stability with manageable risk. Advanced technology widely deployed with low inequality creates a near-ideal pricing environment.";
+      }
+      return `Fairness ${Math.round(fairness)}/100 | Risk ${Math.round(risk)}/100 | Stability ${Math.round(stability)}/100. Adjust sliders to explore trade-offs between technology, equity, and environmental cost.`;
+    }
+
+    // ── COLOR SCALE ──────────────────────────────────────────────────────────────
+    function getColor(adoption) {
+      // adoption: 0–1
+      if (adoption < 0.25) return '#1a5c8a';  // BS only
+      if (adoption < 0.50) return '#2196a8';  // Early MC
+      if (adoption < 0.75) return '#00bcd4';  // Advanced MC
+      if (adoption < 0.90) return '#00e5ff';  // QAE emerging
+      return '#b2ff59';                        // Full quantum
+    }
+
+    // ── MAP SETUP ────────────────────────────────────────────────────────────────
+    const map = L.map('map', { zoomControl: true, attributionControl: false })
+      .setView([20, 10], 2);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19
+    }).addTo(map);
+
+    let geojson = null;
+    let countryAdoptions = {};
+
+    function styleFeature(feature) {
+      const name = feature.properties.name;
+      const adoption = countryAdoptions[name] ?? 0.05;
+      return {
+        fillColor: getColor(adoption),
+        weight: 0.5,
+        opacity: 0.5,
+        color: '#0a1520',
+        fillOpacity: 0.82
+      };
+    }
+
+    function makePopup(name, adoption, mc, qae, ineq) {
+      const d = getCountryData(name);
+      const tierLabels = ['Limited Access', 'Developing', 'Developed'];
+      const pct = Math.round(adoption * 100);
+      const method = adoption < 0.25 ? 'Black–Scholes' :
+        adoption < 0.55 ? 'Monte Carlo (early)' :
+          adoption < 0.80 ? 'Monte Carlo (advanced)' :
+            adoption < 0.90 ? 'QAE (nascent)' : 'QAE (deployed)';
+
+      return `
+    <div class="popup-country">${name}</div>
+    <div class="popup-row"><span class="popup-key">Access tier</span><span class="popup-val">${tierLabels[d.tier]}</span></div>
+    <div class="popup-row"><span class="popup-key">Tech adoption</span><span class="popup-val">${pct}%</span></div>
+    <div class="popup-row"><span class="popup-key">Primary method</span><span class="popup-val">${method}</span></div>
+    <div class="popup-row"><span class="popup-key">MC readiness</span><span class="popup-val">${Math.round(d.baseMC * 100)}%</span></div>
+    <div class="popup-row"><span class="popup-key">QAE readiness</span><span class="popup-val">${Math.round(d.baseQAE * 100)}%</span></div>
+    <div class="popup-row"><span class="popup-key">Ineq. exposure</span><span class="popup-val">${Math.round(d.ineqMult * 100)}%</span></div>
+  `;
+    }
+
+    function onEachFeature(feature, layer) {
+      const name = feature.properties.name;
+      layer.on({
+        mouseover(e) { e.target.setStyle({ weight: 2, color: '#00c8ff', fillOpacity: 0.95 }); },
+        mouseout(e) { geojson.resetStyle(e.target); },
+        click(e) {
+          const adoption = countryAdoptions[name] ?? 0.05;
+          const mc = +document.getElementById('mc-slider').value;
+          const qae = +document.getElementById('qae-slider').value;
+          const ineq = +document.getElementById('ineq-slider').value;
+          layer.bindPopup(makePopup(name, adoption, mc, qae, ineq)).openPopup();
+        }
+      });
+    }
+
+    fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
+      .then(r => r.json())
+      .then(data => {
+        geojson = L.geoJSON(data, { style: styleFeature, onEachFeature }).addTo(map);
+        updateSim(); // Initial render
+      });
+
+    // ── UPDATE ───────────────────────────────────────────────────────────────────
+    function updateSim() {
+      const mc = +document.getElementById('mc-slider').value;
+      const qae = +document.getElementById('qae-slider').value;
+      const ineq = +document.getElementById('ineq-slider').value;
+      const env = +document.getElementById('env-slider').value;
+
+      document.getElementById('mc-val').textContent = mc + '%';
+      document.getElementById('qae-val').textContent = qae + '%';
+      document.getElementById('ineq-val').textContent = ineq + '%';
+      document.getElementById('env-val').textContent = env + '%';
+
+      // Recompute adoptions per country
+      if (geojson) {
+        geojson.eachLayer(layer => {
+          const name = layer.feature.properties.name;
+          const adoption = computeAdoption(name, mc, qae, ineq);
+          countryAdoptions[name] = adoption;
+          layer.setStyle({
+            fillColor: getColor(adoption),
+            fillOpacity: 0.82
+          });
+        });
+      }
+
+      // Compute global metrics
+      const metrics = computeMetrics(mc, qae, ineq, env);
+      const { fairness, risk, stability, co2, bsEnergy, mcEnergy, qaeEnergy, totalEnergy } = metrics;
+
+      document.getElementById('m-fairness').textContent = Math.round(fairness);
+      document.getElementById('m-risk').textContent = Math.round(risk);
+      document.getElementById('m-stability').textContent = Math.round(stability);
+      document.getElementById('m-co2').textContent = co2.toFixed(1);
+
+      document.getElementById('b-fairness').style.width = fairness + '%';
+      document.getElementById('b-risk').style.width = risk + '%';
+      document.getElementById('b-stability').style.width = stability + '%';
+      document.getElementById('b-co2').style.width = Math.min(100, co2 / 0.15) + '%';
+
+      document.getElementById('e-bs').textContent = bsEnergy.toFixed(1);
+      document.getElementById('e-mc').textContent = mcEnergy.toFixed(1);
+      document.getElementById('e-qae').textContent = qaeEnergy.toFixed(1);
+      document.getElementById('e-total').textContent = totalEnergy.toFixed(1);
+
+      document.getElementById('insight-text').textContent =
+        generateInsight(mc, qae, ineq, env, metrics);
+    }
+
+    ['mc-slider', 'qae-slider', 'ineq-slider', 'env-slider'].forEach(id => {
+      document.getElementById(id).addEventListener('input', updateSim);
+    });
+  </script>
+</body>
+
+</html>
